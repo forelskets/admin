@@ -1,6 +1,6 @@
+import React,{useEffect,useState} from 'react'
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
-import { useState } from 'react';
 // import { Link as RouterLink } from 'react-router-dom';
 // material
 import {
@@ -23,19 +23,19 @@ import Scrollbar from '../components/Scrollbar';
 import SearchNotFound from '../components/SearchNotFound';
 import { AppListHead, AppListToolbar, AppMoreMenu } from '../components/_dashboard/Application';
 //
-import APPLIST from '../_mocks_/application';
-
+import APPLIST1 from '../_mocks_/application';
+import { Applications, ApplicationsStateChange } from '../_services/Admin.services'
+import toastr from 'toastr'
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: 'Name', alignRight: false },
-  { id: 'mobileno', label: 'MobileNo', alignRight: false },
-  { id: 'Application', label: 'Application No', alignRight: false },
-  { id: 'mobileno', label: 'Aadhar No', alignRight: false },
-  { id: 'mobileno', label: 'Pan No', alignRight: false },
+  { id: 'UserId.Name', label: 'Name', alignRight: false },
+  { id: 'mobileno1', label: 'MobileNo', alignRight: false },
+  { id: 'ApplicationNo', label: 'Application No', alignRight: false },
+  { id: 'mobileno2', label: 'Aadhar No', alignRight: false },
+  { id: 'mobileno3', label: 'Pan No', alignRight: false },
   { id: 'password', label: 'Amount', alignRight: false },
-
-  { id: 'mobileno', label: 'Date', alignRight: false },
+  { id: 'mobileno4', label: 'Date', alignRight: false },
   { id: 'status', label: 'Status', alignRight: false },
   { id: '' }
 ];
@@ -85,6 +85,18 @@ export default function User() {
     setOrderBy(property);
   };
 
+  const [APPLIST, setData] = useState([]);
+    useEffect(() => {
+      callEffect();
+    }, []);
+  
+    const callEffect = async () => {
+      let res = await Applications()
+      if (res?.status === 1 && Array.isArray(res?.data?.applications)) {
+        setData(res?.data?.applications);
+      }
+    };
+
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
       const newSelecteds = APPLIST.map((n) => n.name);
@@ -131,6 +143,11 @@ export default function User() {
 
   const isAppNotFound = filteredApps.length === 0;
 
+
+    
+
+    console.log("sssss",APPLIST1)
+
   return (
     <Page title="Applications | CreditIN">
       <Container>
@@ -163,13 +180,15 @@ export default function User() {
                   {filteredApps
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row) => {
-                      const { id, name, role, status, company } = row;
+                      const { name, _id, status,ApplicationNo,UserId ,KycId,Amount,createdAt} = row;
+                       const {Name,Mobile}=UserId
+                       const {AdhaarNo,PanNo}=KycId
                       const isItemSelected = selected.indexOf(name) !== -1;
 
                       return (
                         <TableRow
                           hover
-                          key={id}
+                          key={_id}
                           tabIndex={-1}
                           role="checkbox"
                           selected={isItemSelected}
@@ -184,24 +203,26 @@ export default function User() {
                           <TableCell component="th" scope="row" padding="none">
                             <Stack direction="row" alignItems="center" spacing={2}>
                               <Typography variant="subtitle2" noWrap>
-                                {name}
+                                {Name}
                               </Typography>
                             </Stack>
                           </TableCell>
-                          <TableCell align="left">{company}</TableCell>
-                          <TableCell align="left">{company}</TableCell>
-                          <TableCell align="left">{role}</TableCell>
-                          <TableCell align="left">{company}</TableCell>
+                          <TableCell align="left">{Mobile}</TableCell>
+                          <TableCell align="left">{AdhaarNo}</TableCell>
+                          <TableCell align="left">{PanNo}</TableCell>
+                          <TableCell align="left">{ApplicationNo}</TableCell>
 
-                          <TableCell align="left">{company}</TableCell>
-                          <TableCell align="left">{role}</TableCell>
+                          <TableCell align="left">{Amount}</TableCell>
+                          <TableCell align="left">{createdAt}</TableCell>
                           <TableCell align="left">
-                            <Label
+
+                          <Status status={status} id={_id} ApiUpdate={callEffect}></Status>
+                            {/* <Label
                               variant="ghost"
                               color={(status === 'banned' && 'error') || 'success'}
                             >
                               {sentenceCase(status)}
-                            </Label>
+                            </Label> */}
                           </TableCell>
 
                           <TableCell align="right">
@@ -242,4 +263,41 @@ export default function User() {
       </Container>
     </Page>
   );
+}
+
+
+
+const statusArry = ["Pending", "Approved", "Processing", "Reject"]
+const Status = (props) => {
+   const [value, setValue] = useState("")
+   const [loader, setLoader] = useState(false)
+  useEffect(()=>{
+    setValue(props?.status)
+  },[props?.status])
+  const onChange = (e) => {
+    const { value } = e.target
+    setLoader(true)
+    ApplicationsStateChange(props.id, { status: value }).then(res => {
+      if(res?.status === 1){
+        toastr.success("Success")
+        setValue(value)
+        setLoader(false)
+        if(props.ApiUpdate){
+          props.ApiUpdate()
+        }
+      }else{
+        setLoader(false)
+      }
+    })
+  }
+
+  return <>
+    {/* <p>{props?.status}</p> */}
+    <select value={value} onChange={e => onChange(e)}>
+      {statusArry.map((obj) => {
+        return <option value={obj}>{obj}</option>
+      })}
+    </select>
+    {loader && <div>Loading...</div>}
+  </>
 }

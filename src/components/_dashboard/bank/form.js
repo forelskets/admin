@@ -1,4 +1,5 @@
-import * as React from 'react';
+import React, { useState } from 'react'
+import { Validate } from '../../../_helper'
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -6,8 +7,33 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { Stack, TextField } from '@mui/material';
 import Iconify from '../../Iconify';
 
-export default function FormModal() {
+export default function FormModal(props) {
   const [open, setOpen] = React.useState(false);
+
+  const [note, setNote] = useState('');
+  const [serviceName, setServiceName] = useState('');
+  const [error, setError] = useState('');
+  const SubmitForms = () => {
+    let success = 0;
+    let obj = { Note: note, BankName: serviceName }
+    let Obj = Validate(obj, rules)
+    Object.keys(Obj).map(key => {
+      if (Obj[key] !== "") {
+        success = 1
+      }
+    })
+    setError(Obj)
+    if (success === 0) {
+      props.callApi(obj, callback)
+    }
+  }
+
+  const callback = () => {
+    setServiceName("");
+    setNote("");
+    handleClose()
+  }
+
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -46,11 +72,19 @@ export default function FormModal() {
         >
           <DialogTitle id="alert-dialog-title">Add Services</DialogTitle>
 
-          <TextField helperText="Enter Services" id="demo-helper-text-aligned" label="Service" />
-          <TextField helperText=" Note" id="demo-helper-text-aligned-no-helper" label="Note" />
+          <TextField helperText="Enter Services" id="demo-helper-text-aligned" label="Service"
+            value={serviceName}
+            onChange={(e) => { setServiceName(e.target.value); setError("") }}
+          />
+          {error?.BankName && <div className='error-msg'>{error.BankName}</div>}
 
+          <TextField helperText=" Note" id="demo-helper-text-aligned-no-helper" label="Note"
+            value={note}
+            onChange={(e) => { setNote(e.target.value); setError("") }}
+          />
+          {error?.Note && <div className='error-msg'>{error.Note}</div>}
           <DialogActions>
-            <Button onClick={handleClose} autoFocus>
+            <Button onClick={SubmitForms} autoFocus>
               Save
             </Button>
             <Button onClick={handleClose}>Cancel</Button>
@@ -60,3 +94,16 @@ export default function FormModal() {
     </div>
   );
 }
+
+
+const rules = [{
+  field: 'Note',
+  fieldName: 'Note',
+  type: 'string',
+  require: true
+}, {
+  field: 'BankName',
+  fieldName: 'Bank Name',
+  type: 'string',
+  require: true
+}]

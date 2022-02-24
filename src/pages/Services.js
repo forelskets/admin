@@ -1,5 +1,6 @@
+import React, { useEffect, useState } from 'react';
 import { filter } from 'lodash';
-import { useState } from 'react';
+
 // import { Link as RouterLink } from 'react-router-dom';
 // material
 import {
@@ -26,8 +27,10 @@ import {
   FormModal
 } from '../components/_dashboard/services';
 //
-import SERVICES from '../_mocks_/services';
+// import SERVICES from '../_mocks_/services';
 
+import { service, AllService } from '../_services/Admin.services'
+import toastr from 'toastr';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
@@ -77,6 +80,38 @@ export default function Services() {
   const [orderBy, setOrderBy] = useState('name');
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+
+  
+  const [SERVICES, setData] = useState([]);
+
+  const callEffect = async () => {
+    let res = await AllService()
+    if (res?.status === 1 && Array.isArray(res?.data?.services)) {
+      setData(res.data.services)
+    } else {
+      if (res?.message)
+        toastr.success(res.message)
+    }
+  };
+
+  useEffect(() => {
+    callEffect();
+  }, []);
+
+
+  const saveService = async (obj, callback) => {
+    let res = await service(obj)
+    if (res?.status === 1) {
+      if (callback) { callback() }
+      callEffect()
+      toastr.success("Service created!")
+    } else {
+      if (res?.message)
+        toastr.success(res.message)
+    }
+  }
+
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -138,7 +173,7 @@ export default function Services() {
             Services
           </Typography>
 
-          <FormModal />
+          <FormModal callApi={saveService}/>
         </Stack>
 
         <Card>
@@ -164,8 +199,8 @@ export default function Services() {
                   {filteredServices
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row) => {
-                      const { id, name, company } = row;
-                      const isItemSelected = selected.indexOf(name) !== -1;
+                      const { id, ServiceName, Note } = row;
+                      const isItemSelected = selected.indexOf(ServiceName) !== -1;
 
                       return (
                         <TableRow
@@ -179,11 +214,11 @@ export default function Services() {
                           <TableCell padding="checkbox">
                             <Checkbox
                               checked={isItemSelected}
-                              onChange={(event) => handleClick(event, name)}
+                              onChange={(event) => handleClick(event, ServiceName)}
                             />
                           </TableCell>
-                          <TableCell align="left">{name}</TableCell>
-                          <TableCell align="left">{company}</TableCell>
+                          <TableCell align="left">{ServiceName}</TableCell>
+                          <TableCell align="left">{Note}</TableCell>
                           <TableCell align="right">
                             <SerMoreMenu />
                           </TableCell>

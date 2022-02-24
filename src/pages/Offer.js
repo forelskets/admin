@@ -1,5 +1,6 @@
+import React, { useState, useEffect } from 'react'
 import { filter } from 'lodash';
-import { useState } from 'react';
+
 // import { Link as RouterLink } from 'react-router-dom';
 // material
 import {
@@ -27,7 +28,15 @@ import {
   FormModal
 } from '../components/_dashboard/offer';
 //
-import OFFERS from '../_mocks_/offer';
+// import OFFERS from '../_mocks_/offer';
+
+// import { OfferForm } from '../components/AddYourBankDetailsForm'
+
+import {
+  AllBankOffer,
+  saveBankOffer
+} from '../_services/Admin.services'
+import toastr from 'toastr';
 
 // ----------------------------------------------------------------------
 
@@ -79,6 +88,38 @@ export default function Offer() {
   const [orderBy, setOrderBy] = useState('name');
   const [filterName, setFilterName] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+
+  const [OFFERS, setData] = useState([]);
+
+  const callEffect = async () => {
+    let res = await AllBankOffer()
+    if (res?.status === 1 && Array.isArray(res?.data?.services)) {
+      setData(res.data.services)
+    } else {
+      if (res?.message)
+        toastr.success(res.message)
+    }
+  };
+
+  useEffect(() => {
+    callEffect();
+  }, []);
+
+
+  const saveOffers = async (obj, callback) => {
+    let res = await saveBankOffer(obj)
+    if (res?.status === 1) {
+      if (callback) { callback() }
+      callEffect()
+      toastr.success("Bank offer created!")
+    } else {
+      if (res?.message)
+        toastr.success(res.message)
+    }
+  }
+
+
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -140,7 +181,7 @@ export default function Offer() {
             Bank Services
           </Typography>
 
-          <FormModal />
+          <FormModal callApi={saveOffers}/>
         </Stack>
 
         <Card>
@@ -166,13 +207,14 @@ export default function Offer() {
                   {filteredServices
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((row) => {
-                      const { id, name, company } = row;
-                      const isItemSelected = selected.indexOf(name) !== -1;
+                      const { _id, BankName, BankService, Note } = row;
+                      
+                      const isItemSelected = selected.indexOf(BankName.BankName) !== -1;
 
                       return (
                         <TableRow
                           hover
-                          key={id}
+                          key={_id}
                           tabIndex={-1}
                           role="checkbox"
                           selected={isItemSelected}
@@ -181,12 +223,12 @@ export default function Offer() {
                           <TableCell padding="checkbox">
                             <Checkbox
                               checked={isItemSelected}
-                              onChange={(event) => handleClick(event, name)}
+                              onChange={(event) => handleClick(event, BankName.BankName)}
                             />
                           </TableCell>
-                          <TableCell align="left">{name}</TableCell>
-                          <TableCell align="left">{company}</TableCell>
-                          <TableCell align="left">{company}</TableCell>
+                          <TableCell align="left">{BankName.BankName}</TableCell>
+                          <TableCell align="left">{BankService && BankService.map(x=>(x.ServiceName)).join()}</TableCell>
+                          <TableCell align="left">{Note}</TableCell>
                           <TableCell align="right">
                             <OfferMoreMenu />
                           </TableCell>
